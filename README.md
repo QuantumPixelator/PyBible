@@ -1,6 +1,6 @@
 
   # PyBible 📝  
-  Simple Python app read XML Bible files.
+  Simple Python app to read XML Bible files.
 
   Version 1.1.0
 
