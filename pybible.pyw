@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QFontDialog, QFileDialog, QComboBox, QTextEdit, QPushButton, QToolBar, QMessageBox, QDialog, QLineEdit, QTextBrowser
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QFontDialog, QFileDialog, QComboBox, QTextEdit, QPushButton, QToolBar, QMessageBox, QDialog, QLineEdit, QTextBrowser, QSizePolicy
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QAction, QFont, QIcon
 import sys
@@ -148,22 +148,31 @@ class BibleApp(QWidget):
             self.save_settings()
             return True
         return False
+    
+    def show_about(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText("PyBible: a simple Bible reader\nwritten in Python using PySide6.\n\nAuthor: QuantumPixelator\n\nVersion: 1.1.0\n\nLicense: MIT")
+        msg.setWindowTitle("About PyBible")
+        msg.setWindowIcon(QIcon("resources/icon.png"))
+        msg.setStandardButtons(QMessageBox.Ok)
+        msg.exec()
 
 def get_updated_stylesheet():
     try:
         with open('settings.json', 'r') as f:
             settings = json.load(f)
         font_family = settings.get('font_family', 'Arial')
+        font_size = settings.get('font_size', 12)
     except FileNotFoundError:
         font_family = 'Arial'  # Default font family if the JSON file is not found
+        font_size = 12  # Default font size if the JSON file is not found
     
-    # Add this specific line for QTextEdit to your original stylesheet
-    text_edit_stylesheet = f'QTextEdit {{ font-family: {font_family}; }}'
+    text_edit_stylesheet = f'QTextEdit {{ font-family: {font_family}; font-size: {font_size}px; }}'
     
     updated_stylesheet = STYLESHEET + "\n" + text_edit_stylesheet
     
     return updated_stylesheet
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -190,6 +199,16 @@ if __name__ == "__main__":
     exitAction = QAction(QIcon("resources/exit_icon.png"), "Exit")
     exitAction.triggered.connect(lambda: app.quit() if bible_app.confirm_exit() else None)
     toolbar.addAction(exitAction)
+    
+    # Add a spacer to push the next button to the right end
+    spacer = QWidget()
+    spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+    toolbar.addWidget(spacer)
+
+    # Add "About" icon to the far right
+    rightButtonAction = QAction(QIcon("resources/about_icon.png"), "About")
+    rightButtonAction.triggered.connect(bible_app.show_about)
+    toolbar.addAction(rightButtonAction)
 
     window.setWindowTitle("PyBible")
     window.setWindowIcon(QIcon("resources/icon.png"))
