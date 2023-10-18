@@ -70,7 +70,6 @@ class BibleApp(QWidget):
                 settings = json.load(f)
             self.parent().resize(*settings.get('window_size', [800, 600]))
             self.parent().move(*settings.get('window_position', [100, 100]))
-            self.verseTextBox.setFont(QFont(settings.get('font', 'Arial'), int(settings.get('font_size', 12))))
 
             if settings.get('current_xml_path'):
                 self.current_xml_path = settings['current_xml_path']
@@ -92,7 +91,7 @@ class BibleApp(QWidget):
         settings = {
             'window_size': [self.parent().width(), self.parent().height()],
             'window_position': [self.parent().x(), self.parent().y()],
-            'font': self.verseTextBox.font().family(),
+            'font_family': self.verseTextBox.font().family(),
             'font_size': self.verseTextBox.font().pointSize(),
             'current_xml_path': self.current_xml_path,
             'current_book': self.bookComboBox.currentText(),
@@ -150,9 +149,26 @@ class BibleApp(QWidget):
             return True
         return False
 
+def get_updated_stylesheet():
+    try:
+        with open('settings.json', 'r') as f:
+            settings = json.load(f)
+        font_family = settings.get('font_family', 'Arial')
+    except FileNotFoundError:
+        font_family = 'Arial'  # Default font family if the JSON file is not found
+    
+    # Add this specific line for QTextEdit to your original stylesheet
+    text_edit_stylesheet = f'QTextEdit {{ font-family: {font_family}; }}'
+    
+    updated_stylesheet = STYLESHEET + "\n" + text_edit_stylesheet
+    
+    return updated_stylesheet
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setStyleSheet(STYLESHEET)
+    updated_stylesheet = get_updated_stylesheet()  # Get the stylesheet updated with the font from JSON
+    app.setStyleSheet(updated_stylesheet) 
     window = QMainWindow()
 
     toolbar = QToolBar()
@@ -160,6 +176,7 @@ if __name__ == "__main__":
 
     bible_app = BibleApp()
     window.setCentralWidget(bible_app)
+
     bible_app.load_settings()
 
     openAction = QAction(QIcon("resources/open_icon.png"), "Open Bible File")
@@ -176,7 +193,6 @@ if __name__ == "__main__":
 
     window.setWindowTitle("PyBible")
     window.setWindowIcon(QIcon("resources/icon.png"))
-    # window.resize(800, 600)
     window.show()
 
     app.exec()
