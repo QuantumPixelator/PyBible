@@ -1,10 +1,14 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QFontDialog, QFileDialog, QComboBox, QTextEdit, QPushButton, QToolBar, QMessageBox, QDialog, QLineEdit, QTextBrowser, QSizePolicy
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
+                               QLabel, QFontDialog, QFileDialog, QComboBox, QTextEdit,
+                               QPushButton, QToolBar, QMessageBox, QDialog, QLineEdit,
+                               QTextBrowser, QSizePolicy, QHBoxLayout)
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QFont, QIcon
 import sys
 import json
 from xml.etree import ElementTree as ET
 
+# Global stylesheet
 STYLESHEET = '''
     QWidget {
         font-family: Arial;
@@ -55,7 +59,9 @@ class BibleApp(QWidget):
 
         layout.addWidget(self.titleLabel)
         layout.addWidget(self.bookComboBox)
+        self.bookComboBox.setMaximumWidth(150)
         layout.addWidget(self.chapterComboBox)
+        self.chapterComboBox.setMaximumWidth(75)
         layout.addWidget(self.verseTextBox)
 
         self.bookComboBox.currentIndexChanged.connect(self.load_chapters)
@@ -148,15 +154,68 @@ class BibleApp(QWidget):
             self.save_settings()
             return True
         return False
-    
+
     def show_about(self):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
-        msg.setText("PyBible: a simple Bible reader\nwritten in Python using PySide6.\n\nAuthor: QuantumPixelator\n\nVersion: 1.1.0\n\nLicense: MIT")
+        msg.setText("PyBible: a simple Bible reader\nwritten in Python using PySide6.\n\nAuthor: QuantumPixelator\n\nVersion: 1.2.0\n\nLicense: MIT")
         msg.setWindowTitle("About PyBible")
         msg.setWindowIcon(QIcon("resources/icon.png"))
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec()
+
+    # Search functionality
+    def show_search(self):
+        search_dialog = QDialog(self)
+        search_dialog.setWindowTitle("Search")
+        search_dialog_layout = QVBoxLayout()
+        search_input = QLineEdit()
+        search_input.setPlaceholderText("Enter search term...")
+        search_button = QPushButton("Search")
+        search_result = QTextEdit()
+        search_result.setReadOnly(True)
+
+        search_dialog_layout.addWidget(search_input)
+        search_dialog_layout.addWidget(search_button)
+        search_dialog_layout.addWidget(search_result)
+        search_dialog.setLayout(search_dialog_layout)
+
+        def perform_search():
+            search_term = search_input.text()
+            search_results = self.search_in_xml(self.root, search_term)
+            result_count = 0  # Initialize the counter
+            results_text = ""
+            for result in search_results:
+                book = result['Book']
+                chapter = result['Chapter']
+                verse = result['Verse']
+                text = result['Text']
+                results_text += f"{book} {chapter}:{verse}\n{text}\n\n"
+                result_count += 1  # Increment the counter
+            
+            results_text = f"Total Results: {result_count}\n\n" + results_text  # Add the counter to the textbox results
+            search_result.setText(results_text)
+
+        search_button.clicked.connect(perform_search)
+        search_dialog.exec_()
+
+    def search_in_xml(self, root: ET.Element, search_term: str):
+        search_results = []
+        for book in root.findall('.//b'):
+            book_name = book.attrib.get('n', 'Unknown Book')
+            for chapter in book.findall('.//c'):
+                chapter_number = chapter.attrib.get('n', 'Unknown Chapter')
+                for verse in chapter.findall('.//v'):
+                    verse_number = verse.attrib.get('n', 'Unknown Verse')
+                    verse_text = verse.text if verse.text else ''
+                    if search_term.lower() in verse_text.lower():
+                        search_results.append({
+                            'Book': book_name,
+                            'Chapter': chapter_number,
+                            'Verse': verse_number,
+                            'Text': verse_text
+                        })
+        return search_results
 
 def get_updated_stylesheet():
     try:
@@ -187,14 +246,27 @@ if __name__ == "__main__":
     window.setCentralWidget(bible_app)
 
     bible_app.load_settings()
+    
+    def create_toolbar_spacer(width=10):
+        spacer = QWidget()
+        spacer.setMinimumWidth(width)
+        spacer.setMaximumWidth(width)
+        return spacer
 
     openAction = QAction(QIcon("resources/open_icon.png"), "Open Bible File")
     openAction.triggered.connect(bible_app.load_xml)
     toolbar.addAction(openAction)
+    toolbar.addWidget(create_toolbar_spacer())
 
     fontAction = QAction(QIcon("resources/font_icon.png"), "Change Font")
     fontAction.triggered.connect(bible_app.change_font)
     toolbar.addAction(fontAction)
+    toolbar.addWidget(create_toolbar_spacer())
+    
+    searchAction = QAction(QIcon("resources/search_icon.png"), "Search")
+    searchAction.triggered.connect(bible_app.show_search)
+    toolbar.addAction(searchAction)
+    toolbar.addWidget(create_toolbar_spacer())
 
     exitAction = QAction(QIcon("resources/exit_icon.png"), "Exit")
     exitAction.triggered.connect(lambda: app.quit() if bible_app.confirm_exit() else None)
@@ -215,3 +287,4 @@ if __name__ == "__main__":
     window.show()
 
     app.exec()
+    

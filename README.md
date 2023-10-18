@@ -1,8 +1,8 @@
 
   # PyBible 📝  
-  Simple Python app to read XML Bible files.
+  Simple Python app to read and search XML Bible files.
 
-  Version 1.1.0
+  Version 1.2.0
 
   #### Three Bibles are included:
   - King James Version
@@ -25,8 +25,7 @@
   
   ## TODO: ✨ 
  - Text to speech
- - Favorites
- - Search  
+ - Favorites 
 
 
   ##
